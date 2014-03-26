@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-touch-fullscreen" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      border: 0;
+      color:#333;
+    }
+    body{
+      background:#eee;
+    }
+    canvas{
+      width: 100%;
+      height: 100%;
+    }
+    #display{
+      position:absolute;
+      top:5;
+      left:5;
+      background:rgb(0,0,0);
+      color:white;
+      font-family:monotype;
+      font-size:16px;
+      z-index:100;
+    }
+    #buttons{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+    }
+    #buttons a{
+      padding:8px;
+      background:white;
+      color:black;
+      font-family:sans-serif;
+      display:inline-block;
+      position:absolute;
+      text-decoration: none;
+      font-weight:bold;
+    }
+    #buttons a#left{
+      top: 50%;
+      left: 0;
+    }
+    #buttons a#right{
+      top: 50%;
+      right: 0;
+    }
+    #buttons a#up{
+      top: 0;
+      left: 50%;
+    }
+    #buttons a#down{
+      bottom: 0;
+      left: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div id="buttons">
+    <a href="#" id="up">up</a>
+    <a href="#" id="down">down</a>
+    <a href="#" id="left">left</a>
+    <a href="#" id="right">right</a>
+  </div>
+  <div id="display"></div>
+  <script src="three.js"></script>
+  <script>
+    (function(){
+      var to_radians = function(degrees){
+        return degrees * Math.PI / 180;
+      };
+      // var handleOrientation = function(event) {
+      //   absolute = event.absolute;
+      //   alpha    = event.alpha;
+      //   beta     = event.beta;
+      //   gamma    = event.gamma;
+      // };
+      var addListeners = function(name){
+        var element = document.getElementById(name);
+        element.onmouseover = function(event){
+          event.preventDefault();
+          directions[name] = true;
+        };
+        element.onmouseout = function(event){
+          event.preventDefault();
+          directions[name] = false;
+        };
+      };
+      var directions = {
+        up: false,
+        down: false,
+        left: false,
+        right: false
+      };
+      if(screen.mozLockOrientation){
+        window.screen.mozLockOrientation('portrait');
+      }
+      window.onload = function(){
+        var absolute, alpha, beta, gamma;
+        var cameraAngley = 0;
+        var cameraAnglex = 0;
+        var orbitRange = 70;
+        var yspeed = 1;
+        var sphere2_direction = 1;
+        var move = function(){            
+          if(directions.up && cameraAngley > -80){
+            cameraAngley -= yspeed;
+          } 
+          if(directions.down && cameraAngley < 80){
+            cameraAngley += yspeed;
+          }
+          cameraAngley %= 360;
+
+          if(directions.left || directions.right){
+
+            var xspeed = 1;
+            if(directions.left){
+              xspeed = -1;
+            }
+            cameraAnglex %= 360;
+            cameraAnglex += xspeed;
+          }
+
+          var initialx = Math.cos(to_radians(cameraAnglex));
+          var initialz = Math.sin(to_radians(cameraAnglex));
+          var initialy = Math.sin(to_radians(cameraAngley));
+          var initial_poorly_named = Math.cos(to_radians(cameraAngley));
+
+          var x = initial_poorly_named * initialx * orbitRange;
+          var y = initialy * orbitRange;
+          var z = initial_poorly_named * initialz * orbitRange;
+
+
+
+          camera.position.x = x;
+          camera.position.y = y;
+          camera.position.z = z;
+          camera.lookAt(new THREE.Vector3(0,0,0));
+
+          // move sphere 2
+          if(sphere2.position.y > 100 || sphere2.position.y < -100){
+            sphere2_direction *= -1;
+          }
+          sphere2.position.y += sphere2_direction;
+
+        };
+        addListeners('down');
+        addListeners('up');
+        addListeners('left');
+        addListeners('right');
+        var display = document.getElementById('display');
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        var renderer = new THREE.WebGLRenderer();
+        var pointLight1 = new THREE.PointLight( 0xFFFFFF );
+        pointLight1.position.x = -90;
+        scene.add(pointLight1);
+        var pointLight2 = new THREE.PointLight( 0xFFFFFF );
+        pointLight2.position.x = 90;
+        scene.add(pointLight2);
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+
+        var geometry = new THREE.SphereGeometry(30,30,30);
+        var material = new THREE.MeshLambertMaterial( {
+          color: 0xffffff,
+          map: THREE.ImageUtils.loadTexture('fesuffolk.jpg')
+        } );
+        var sphere = new THREE.Mesh( geometry, material );
+        var sphere2 = new THREE.Mesh( new THREE.SphereGeometry(4,30,30), material );
+        scene.add(sphere);
+        scene.add(sphere2);
+        sphere2.position.x = 35;
+        var render = function() {
+          requestAnimationFrame(render);
+          move();
+          renderer.render(scene, camera);
+        };        
+        render();
+        // window.addEventListener("deviceorientation", handleOrientation, true);
+      };  
+    }());
+  </script>
+</body>
+</html>
